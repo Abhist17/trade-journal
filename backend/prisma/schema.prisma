@@ -1,0 +1,29 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+model Trade {
+  id            String   @id @default(cuid())
+  symbol        String
+  direction     String
+  entryPrice    Float
+  exitPrice     Float?
+  quantity      Float
+  entryDate     DateTime
+  exitDate      DateTime?
+  status        String   @default("open")
+  strategy      String?
+  notes         String?
+  executionRate Int?
+  tags          String?  @default("")
+  pnl           Float?   @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
