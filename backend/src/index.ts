@@ -33,6 +33,18 @@ app.post("/trades", async (req, res) => {
   });
   res.json(trade);
 });
+app.patch("/trades/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedTrade = await prisma.trade.update({
+      where: { id },
+      data: req.body,
+    });
+    res.json(updatedTrade);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update trade" });
+  }
+});
 
 const PORT = 5000;
 app.listen(PORT, () => {
