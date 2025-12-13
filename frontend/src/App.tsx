@@ -44,10 +44,12 @@ function App() {
       setTrades(data);
       setLoading(false);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching trades:", err);
       setLoading(false);
     }
   };
+
+  const totalPnL = trades.reduce((sum, t) => sum + (t.pnl || 0), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,9 +67,11 @@ function App() {
           notes: form.notes || null,
           tags: form.tags || null,
           executionRate: parseInt(form.executionRate as any),
+          pnl: 0, // temporary, we'll improve later
         }),
       });
-      setIsModalOpen(false);
+
+      // Reset form and close modal
       setForm({
         symbol: "",
         direction: "long",
@@ -79,9 +83,10 @@ function App() {
         tags: "",
         executionRate: 5,
       });
+      setIsModalOpen(false);
       fetchTrades(); // refresh list
     } catch (err) {
-      console.error(err);
+      console.error("Error saving trade:", err);
     }
   };
 
@@ -103,14 +108,50 @@ function App() {
               Log New Trade
             </button>
           </div>
+          <p className="mt-6 text-xl text-blue-100 max-w-3xl">
+            Log your trades • Tag strategies • Rate execution • Review performance • Get AI-powered insights
+          </p>
         </div>
       </header>
 
+      {/* Stats Dashboard */}
+      <section className="max-w-7xl mx-auto px-6 py-8">
+        <h2 className="text-3xl font-bold text-gray-800 mb-8">Performance Stats</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p className="text-gray-600 text-sm">Total Trades</p>
+            <p className="text-4xl font-bold text-blue-600 mt-2">{trades.length}</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p className="text-gray-600 text-sm">Win Rate</p>
+            <p className="text-4xl font-bold text-green-600 mt-2">
+              {trades.length === 0
+                ? "0%"
+                : Math.round((trades.filter(t => (t.pnl || 0) > 0).length / trades.length) * 100) + "%"}
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p className="text-gray-600 text-sm">Total PnL</p>
+            <p className="text-4xl font-bold mt-2" style={{ color: totalPnL >= 0 ? '#10b981' : '#ef4444' }}>
+              {totalPnL.toFixed(2)}
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p className="text-gray-600 text-sm">Avg Execution</p>
+            <p className="text-4xl font-bold text-purple-600 mt-2">
+              {trades.length === 0
+                ? "N/A"
+                : (trades.reduce((sum, t) => sum + (t.executionRate || 0), 0) / trades.length).toFixed(1)}
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Trades List */}
-      <main className="max-w-7xl mx-auto px-6 py-16">
+      <main className="max-w-7xl mx-auto px-6 pb-16">
         <h2 className="text-3xl font-bold text-gray-800 mb-8">Your Trades</h2>
         {loading ? (
-          <p>Loading...</p>
+          <p className="text-center text-gray-600">Loading trades...</p>
         ) : trades.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl shadow-lg">
             <p className="text-2xl text-gray-600 mb-4">No trades yet</p>
@@ -128,23 +169,26 @@ function App() {
                     {trade.direction.toUpperCase()}
                   </span>
                 </div>
-                <p>Entry: ${trade.entryPrice}</p>
-                <p>Qty: {trade.quantity}</p>
+                <p className="text-gray-700">Entry: ${trade.entryPrice}</p>
+                <p className="text-gray-700">Qty: {trade.quantity}</p>
                 <p className="text-sm text-gray-500 mt-2">
                   {new Date(trade.entryDate).toLocaleString()}
                 </p>
                 {trade.strategy && <p className="text-sm text-blue-600 mt-1">Strategy: {trade.strategy}</p>}
                 {trade.tags && <p className="text-sm text-purple-600 mt-1">Tags: {trade.tags}</p>}
+                {trade.executionRate && (
+                  <p className="text-sm text-orange-600 mt-1">Execution: {trade.executionRate}/10</p>
+                )}
               </div>
             ))}
           </div>
         )}
       </main>
 
-      {/* Modal */}
+      {/* Log Trade Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full max-h-screen overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-3xl font-bold">Log New Trade</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700">
@@ -160,6 +204,7 @@ function App() {
                   value={form.symbol}
                   onChange={(e) => setForm({ ...form, symbol: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="EURUSD"
                 />
               </div>
 
@@ -203,6 +248,7 @@ function App() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Entry Date & Time</label>
                 <input
                   type="datetime-local"
+                  required
                   value={form.entryDate}
                   onChange={(e) => setForm({ ...form, entryDate: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
@@ -210,12 +256,13 @@ function App() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Strategy</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Strategy (optional)</label>
                 <input
                   type="text"
                   value={form.strategy}
                   onChange={(e) => setForm({ ...form, strategy: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Breakout, Scalping, Trend Following"
                 />
               </div>
 
@@ -225,7 +272,7 @@ function App() {
                   type="text"
                   value={form.tags}
                   onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                  placeholder="breakout, scalping, fomo"
+                  placeholder="breakout, fomo, high-volatility"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
@@ -243,20 +290,21 @@ function App() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
                 <textarea
                   rows={4}
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="What went well? What could be better?"
                 />
               </div>
 
-              <div className="flex justify-end gap-4 mt-8">
+              <div className="flex justify-end gap-4 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+                  className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 font-medium"
                 >
                   Cancel
                 </button>
