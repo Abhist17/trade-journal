@@ -20,6 +20,19 @@ app.get("/", (req, res) => {
   res.send("Trade Journal backend is running! 🚀");
 });
 
+app.delete("/trades/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.trade.delete({
+      where: { id },
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ error: "Failed to delete trade" });
+  }
+});
+
 app.get("/trades", async (req, res) => {
   const trades = await prisma.trade.findMany({
     orderBy: { entryDate: "desc" },
@@ -36,12 +49,16 @@ app.post("/trades", async (req, res) => {
 app.patch("/trades/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedTrade = await prisma.trade.update({
+    const updatedData = req.body;
+
+    const trade = await prisma.trade.update({
       where: { id },
-      data: req.body,
+      data: updatedData,
     });
-    res.json(updatedTrade);
+
+    res.json(trade); // return the updated trade
   } catch (err) {
+    console.error("PATCH error:", err);
     res.status(500).json({ error: "Failed to update trade" });
   }
 });

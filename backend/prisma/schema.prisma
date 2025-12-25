@@ -11,20 +11,23 @@ datasource db {
 }
 
 model Trade {
-  id            String    @id @default(cuid())
-  symbol        String
-  direction     String
-  entryPrice    Float
-  exitPrice     Float?
-  quantity      Float
-  entryDate     DateTime
-  exitDate      DateTime?
-  status        String    @default("open")
-  strategy      String?
-  notes         String?
-  executionRate Int?
-  tags          String?   @default("")
-  pnl           Float?    @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  symbol          String
+  direction       String
+  entryPrice      Float
+  exitPrice       Float?
+  quantity        Float
+  entryDate       DateTime
+  exitDate        DateTime?
+  status          String
+  strategy        String?
+  notes           String?
+  tags            String?
+  executionRate   Int?
+  pnl             Float?
+  screenshot      String?   // ADD THIS
+  stopLoss        Float?    // ADD THIS
+  takeProfit      Float?    // ADD THIS
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
